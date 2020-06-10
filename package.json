@@ -1,0 +1,19 @@
+{
+  "name": "@doubletrade/gitlab-pipeline-extension",
+  "version": "1.0.0",
+  "description": "extension chrome for displaying gitlab pipeline status",
+  "main": "src/background.js",
+  "author": "Laurent Zvara <PhriKaDel>",
+  "license": "ISC",
+  "keywords": [
+    "gitlab",
+    "chrome-extension",
+    "extension",
+    "chrome",
+    "pipeline"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DoubleTrade/gitlab-pipeline-extension"
+  }
+}

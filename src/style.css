@@ -1,0 +1,104 @@
+body {
+  font-size: 18px;
+  overflow: hidden;
+  margin: 0px;
+  padding: 0px;
+  background: rgb(248, 249, 250);
+}
+
+#card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  background-color: white;
+  box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
+  width: 400px;
+  margin: 10px;
+}
+
+#card>div {
+  padding: 15px;
+}
+
+.inputContainer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+input {
+  font-size: larger;
+}
+
+body>div {
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+#header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#error {
+  color: red;
+}
+
+#title {
+  margin: 10px;
+  font-weight: 600;
+  max-width: 100px;
+  overflow: hidden;
+  display: inline-block;
+  white-space: nowrap;
+  vertical-align: middle;
+  text-overflow: ellipsis;
+}
+
+#content {
+  margin: 10px;
+  overflow-y: auto;
+}
+
+.item {
+  background-color: white;
+  box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
+  padding: 10px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.pipeline {
+  padding: 4px;
+  border: 2px solid;
+  border-radius: 5px;
+}
+
+.SUCCESS {
+  color: green;
+  border-color: green;
+}
+
+.CANCELED {
+  color: orange;
+  border-color: orange;
+}
+
+.FAILED {
+  color: red;
+  border-color: red;
+}
+
+button{
+  color: #6200EE;
+}
+button:hover {
+  color: #3700B3;
+  transition: all 0.4s ease 0s;
+  }
