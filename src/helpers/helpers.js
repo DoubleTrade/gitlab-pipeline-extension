@@ -134,7 +134,7 @@ const setGetPipelineError = (msg) => {
 const setExtensionsInfo = (data) => {
   if (!data.error) {
     const { unknownGroups, groupName, successCounter, failedCounter } = data;
-    const missingGroupStr = unknownGroups.length ? `\n\n/!\\ Group "${unknownGroups.join(' - ')}" missing from gitlab, please fix it in configuration` : null;
+    const missingGroupStr = unknownGroups.length ? `\n\n/!\\ Group "${unknownGroups.join(' - ')}" missing from gitlab, please fix it in configuration` : '';
     const tooltip = `Pipelines for ${groupName}
     - Success: ${successCounter}
     - Failed: ${failedCounter}
