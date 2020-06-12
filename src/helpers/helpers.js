@@ -1,25 +1,33 @@
 const graphqlEndpoint = '/api/graphql';
 
+const queryText = (endpointArray) => {
+  const query = endpointArray.map((group, i) => {
+    return `group${i}: group(fullPath: "${group}") {
+      ...commonData
+    }
+    `
+  });
+  return `{
+    ${query}
+  }`;
+};
+
 const getPipelines = async (url, token, endpoint, refresh) => {
+  const endpointArray = endpoint.split(',');
+  const q = queryText(endpointArray);
   const query = `
-    query {
-      group(fullPath: "${endpoint}") {
-        id
-        name
-        avatarUrl
-        webUrl
-        projects(includeSubgroups: true) {
-          edges {
-            node {
-              id
-              fullPath
-              webUrl
-              pipelines(first: 1) {
-                edges {
-                  node {
-                    id
-                    status
-                  }
+    fragment commonData on Group {
+      name
+      projects(includeSubgroups: true) {
+        edges {
+          node {
+            id
+            fullPath
+            pipelines(first: 1) {
+              edges {
+                node {
+                  id
+                  status
                 }
               }
             }
@@ -27,6 +35,7 @@ const getPipelines = async (url, token, endpoint, refresh) => {
         }
       }
     }
+    ${q}
   `;
   const body = JSON.stringify({ query });
 
@@ -43,34 +52,51 @@ const getPipelines = async (url, token, endpoint, refresh) => {
     });
   const json = await response.json();
   if (json && !json.errors) {
-    const { data: { group } } = json;
-    if (group) {
-      const { projects } = group;
+    const { data } = json;
+    if (data && Object.entries(data).length) {
+
       let failedCounter = 0;
       let successCounter = 0;
-      const children = projects.edges.filter((p) => (p.node.pipelines.edges.length > 0)).map((p) => {
-        const { node } = p;
-        const name = node.fullPath;
-        const pipelines = node.pipelines.edges;
-        const lastPipeline = pipelines[0].node;
-        const pipId = lastPipeline.id.split('/');
-        const pipelineUrl = `${url}/${name}/pipelines/${pipId[pipId.length - 1]}`
-        lastPipeline.webUrl = pipelineUrl
-        if (lastPipeline.status === 'SUCCESS') {
-          successCounter += 1;
-        } else if (lastPipeline.status === 'FAILED') {
-          failedCounter += 1;
-        }
 
-        const avatarUrl = node.avatarUrl;
-        const webUrl = node.webUrl;
-        return {
-          name,
-          avatarUrl,
-          pipeline: lastPipeline,
-          webUrl,
-        }
-      }).sort((a, b) => {
+      const unknownGroups = [];
+      const groupsName = [];
+
+      const groups = Object.values(data)
+        .filter((group, i) => {
+          if (!group) {
+            unknownGroups.push(endpointArray[i]);
+          }
+          return group;
+        })
+        .map((group, i) => {
+          if (group) {
+            const { projects } = group;
+            groupsName.push(group.name);
+            const children = projects.edges.filter((p) => (p.node.pipelines.edges.length > 0)).map((p) => {
+              const { node } = p;
+              const name = node.fullPath;
+              const pipelines = node.pipelines.edges;
+              const lastPipeline = pipelines[0].node;
+              const pipId = lastPipeline.id.split('/');
+              const pipelineUrl = `${url}/${name}/pipelines/${pipId[pipId.length - 1]}`
+              lastPipeline.webUrl = pipelineUrl
+              if (lastPipeline.status === 'SUCCESS') {
+                successCounter += 1;
+              } else if (lastPipeline.status === 'FAILED') {
+                failedCounter += 1;
+              }
+              return {
+                name,
+                pipeline: lastPipeline,
+              }
+            });
+            return children;
+          } else {
+            return null;
+          }
+        });
+
+      const sortedGroups = groups.flat().sort((a, b) => {
         if (a.pipeline.status > b.pipeline.status) {
           return 1;
         }
@@ -83,20 +109,15 @@ const getPipelines = async (url, token, endpoint, refresh) => {
         if (a.pipeline.status === 'FAILED') {
           return -1;
         }
-
         return 0;
       });
       return {
         successCounter,
         failedCounter,
-        groupName: group.name,
-        projects: children,
-        avatarUrl: group.avatarUrl,
-        webUrl: group.webUrl,
+        groupName: groupsName,
+        unknownGroups,
+        projects: sortedGroups,
       };
-    }
-    return {
-      error: "Group unknown",
     }
   }
   return {
@@ -112,10 +133,16 @@ const setGetPipelineError = (msg) => {
 
 const setExtensionsInfo = (data) => {
   if (!data.error) {
-    const tooltip = `Pipelines for ${data.groupName}\n - Success: ${data.successCounter}\n - Failed: ${data.failedCounter}`;
+    const { unknownGroups, groupName, successCounter, failedCounter } = data;
+    const missingGroupStr = unknownGroups.length ? `\n\n/!\\ Group "${unknownGroups.join(' - ')}" missing from gitlab, please fix it in configuration` : null;
+    const tooltip = `Pipelines for ${groupName}
+    - Success: ${successCounter}
+    - Failed: ${failedCounter}
+    ${missingGroupStr}
+    `;
     chrome.browserAction.setTitle({ title: tooltip });
-    if (data.failedCounter > 0) {
-      chrome.browserAction.setBadgeText({ text: `${data.failedCounter}` });
+    if (failedCounter > 0) {
+      chrome.browserAction.setBadgeText({ text: `${failedCounter}` });
       chrome.browserAction.setBadgeBackgroundColor({ color: '#F00' });
     } else {
       chrome.browserAction.setBadgeText({ text: '' });

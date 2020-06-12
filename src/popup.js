@@ -1,7 +1,5 @@
 const buildItem = (d) => {
   const name = d.name;
-  const webUrl = d.webUrl;
-  const avatarUrl = d.avatarUrl;
   const status = d.pipeline.status;
 
   const item = document.createElement('div');
@@ -32,7 +30,6 @@ const init = () => {
     const { url, token, endpoint, refresh } = result;
     const loadingDiv = document.querySelector('#loading');
     const errorDiv = document.querySelector('#error');
-    const titleDiv = document.querySelector('#title');
     const contentDiv = document.querySelector('#content');
 
     errorDiv.style.display = "none";
@@ -43,9 +40,15 @@ const init = () => {
       .then(setExtensionsInfo)
       .then((data) => {
         if (!data.error) {
+          const missingGroupStr = data.unknownGroups.length ? `/!\\ Group "${data.unknownGroups.join(' - ')}" doesn't exist, please fix it in configuration` : null;
           loadingDiv.style.display = "none";
           contentDiv.style.display = "block";
-          titleDiv.textContent = `${data.groupName}`;
+          if (missingGroupStr) {
+            errorDiv.style.display = "block";
+            errorDiv.textContent = missingGroupStr;
+          } else {
+            errorDiv.style.display = "none";
+          }
           data.projects.map((d) => {
             const div = buildItem(d);
             contentDiv.appendChild(div);
@@ -62,7 +65,7 @@ const init = () => {
         contentDiv.style.display = "none";
         errorDiv.style.display = "block";
         errorDiv.innerHTML = `Error while getting pipeline, Please fix Gitlab URL in options or check your network settings<br/>${JSON.stringify(error)}`;
-        setGetPipelineError(err);
+        setGetPipelineError(error);
       });
   });
 }

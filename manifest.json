@@ -2,7 +2,7 @@
   "name": "Gitlab Pipelines",
   "options_ui": {
     "page": "src/options.html",
-    "open_in_tab": false
+    "open_in_tab": true
   },
   "version": "1.0",
   "description": "Get gitlab's pipelines status",
