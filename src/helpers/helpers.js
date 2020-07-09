@@ -12,6 +12,37 @@ const queryText = (endpointArray) => {
   }`;
 };
 
+const getProjectPipeline = async (url, token, fullPath) => {
+  const query = `{
+    project(fullPath:"${fullPath}") {
+      name
+      id
+      fullPath
+      pipelines(first: 1) {
+        edges {
+          node {
+            id
+            status
+          }
+        }
+      }
+    }
+  }`;
+  const body = JSON.stringify({ query });
+  const response = await fetch(
+    `${url}/${graphqlEndpoint}`,
+    {
+      method: 'post',
+      body,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  return response.json();
+}
+
 const getPipelines = async (url, token, endpoint, refresh) => {
   const endpointArray = endpoint.split(',');
   const q = queryText(endpointArray);
@@ -61,40 +92,47 @@ const getPipelines = async (url, token, endpoint, refresh) => {
       const unknownGroups = [];
       const groupsName = [];
 
-      const groups = Object.values(data)
+      const filteredGroups = Object.values(data)
         .filter((group, i) => {
           if (!group) {
             unknownGroups.push(endpointArray[i]);
           }
           return group;
-        })
-        .map((group, i) => {
-          if (group) {
-            const { projects } = group;
-            groupsName.push(group.name);
-            const children = projects.edges.filter((p) => (p.node.pipelines.edges.length > 0)).map((p) => {
-              const { node } = p;
-              const name = node.fullPath;
-              const pipelines = node.pipelines.edges;
-              const lastPipeline = pipelines[0].node;
-              const pipId = lastPipeline.id.split('/');
-              const pipelineUrl = `${url}/${name}/pipelines/${pipId[pipId.length - 1]}`
-              lastPipeline.webUrl = pipelineUrl
-              if (lastPipeline.status === 'SUCCESS') {
-                successCounter += 1;
-              } else if (lastPipeline.status === 'FAILED') {
-                failedCounter += 1;
-              }
-              return {
-                name,
-                pipeline: lastPipeline,
-              }
-            });
-            return children;
-          } else {
-            return null;
-          }
         });
+      for (i in [...unknownGroups]) {
+        const projectResult = await getProjectPipeline(url, token, unknownGroups[i]);
+        if (projectResult?.data?.project) {
+          filteredGroups.push({ projects: { edges: [{ node: projectResult.data.project }] }, name: projectResult.data.project.name });
+          unknownGroups.splice(i, 1);
+        }
+      }
+      const groups = filteredGroups.map((group, i) => {
+        if (group) {
+          const { projects } = group;
+          groupsName.push(group.name);
+          const children = projects.edges.filter((p) => (p.node.pipelines.edges.length > 0)).map((p) => {
+            const { node } = p;
+            const name = node.fullPath;
+            const pipelines = node.pipelines.edges;
+            const lastPipeline = pipelines[0].node;
+            const pipId = lastPipeline.id.split('/');
+            const pipelineUrl = `${url}/${name}/pipelines/${pipId[pipId.length - 1]}`
+            lastPipeline.webUrl = pipelineUrl
+            if (lastPipeline.status === 'SUCCESS') {
+              successCounter += 1;
+            } else if (lastPipeline.status === 'FAILED') {
+              failedCounter += 1;
+            }
+            return {
+              name,
+              pipeline: lastPipeline,
+            }
+          });
+          return children;
+        } else {
+          return null;
+        }
+      });
 
       const sortedGroups = groups.flat().sort((a, b) => {
         if (a.pipeline.status > b.pipeline.status) {
@@ -121,7 +159,7 @@ const getPipelines = async (url, token, endpoint, refresh) => {
     }
   }
   return {
-    error: "Error while getting data"
+    error: `Error while getting data ${json?.errors[0]?.message || ''}`
   };
 };
 

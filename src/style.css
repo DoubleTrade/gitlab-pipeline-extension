@@ -9,11 +9,11 @@ body {
 #card {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
   background-color: white;
   box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
-  width: 400px;
+  width: 800px;
   margin: 10px;
 }
 
@@ -27,8 +27,11 @@ body {
   align-items: center;
 }
 
-input {
+input[type="text"],
+input[type="number"] {
   font-size: larger;
+  margin-left: 7px;
+  flex-grow: 1;
 }
 
 body>div {
@@ -95,10 +98,11 @@ body>div {
   border-color: red;
 }
 
-button{
+button {
   color: #6200EE;
 }
+
 button:hover {
   color: #3700B3;
   transition: all 0.4s ease 0s;
-  }
+}
